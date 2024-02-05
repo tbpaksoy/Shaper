@@ -55,7 +55,6 @@ void WindowLoop(GLFWwindow *window, GLuint VAO, int count, Shader *shader, std::
 {
     while (!glfwWindowShouldClose(window))
     {
-        func();
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT);
         if (shader)
@@ -64,13 +63,13 @@ void WindowLoop(GLFWwindow *window, GLuint VAO, int count, Shader *shader, std::
         glDrawArrays(GL_TRIANGLES, 0, count);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
+        func();
     }
 }
 void WindowLoop(GLFWwindow *window, GLuint VAO, int vaoCount, GLuint EBO, int eboCount, Shader *shader, std::function<void()> func)
 {
     while (!glfwWindowShouldClose(window))
     {
-        func();
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT);
         if (shader)
@@ -80,5 +79,6 @@ void WindowLoop(GLFWwindow *window, GLuint VAO, int vaoCount, GLuint EBO, int eb
         glDrawElements(GL_TRIANGLES, eboCount, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
+        func();
     }
 }

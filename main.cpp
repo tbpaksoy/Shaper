@@ -12,9 +12,10 @@
 #include "Shader.h"
 #endif
 #include "Shader.cpp"
-
 #include "simdjson.h"
 #include "simdjson.cpp"
+#include "Camera.h"
+#include "Camera.cpp"
 int w, h;
 std::string name;
 void ErrorCallback(int id, const char *desc)
@@ -26,38 +27,35 @@ const unsigned int glVersionMajor = 3;
 
 int main()
 {
+
     simdjson::ondemand::parser parser;
     simdjson::padded_string json = simdjson::padded_string::load("settings.json");
     simdjson::ondemand::document settings = parser.iterate(json);
 
     Shader *shader = new Shader("Shaders\\core.frag", "Shaders\\core.vs", false);
     srand(std::time(nullptr));
-    float data[36];
-    for (int i = 0; i < 36; i += 6)
+    int l;
+    double *data = ConstructDataFromJson(&l, "data.json", true, true);
+    double _data[l];
+    for (int i = 0; i < l; i++)
     {
-        data[i] = (rand() % 2 == 0 ? 1 : -1) * (float)rand() / (float)RAND_MAX;
-        data[i + 1] = (rand() % 2 == 0 ? 1 : -1) * (float)rand() / (float)RAND_MAX;
-        data[i + 2] = (rand() % 2 == 0 ? 1 : -1) * (float)rand() / (float)RAND_MAX;
-        data[i + 3] = (float)rand() / (float)RAND_MAX;
-        data[i + 4] = (float)rand() / (float)RAND_MAX;
-        data[i + 5] = (float)rand() / (float)RAND_MAX;
+        _data[i] = data[i];
     }
-    glfwSetErrorCallback(ErrorCallback);
 
+    glfwSetErrorCallback(ErrorCallback);
     w = settings["width"].get_int64();
     h = settings["height"].get_int64();
-    auto nameSV = settings["name"].get_string();
-    std::string nameS(nameSV.value());
-    name = nameS.c_str();
+    name = std::string(settings["name"].get_string().value()).c_str();
     int sw, sh;
     GLFWwindow *window = CreateWindow(w, h, 3, 3, name.c_str());
     glfwGetFramebufferSize(window, &sw, &sh);
     glfwMakeContextCurrent(window);
     glewInit();
     shader->Compile();
+    shader->Use();
     GLuint VAO, VBO, EBO;
     GenVAO(&VAO);
-    GenVBO(&VBO, data, sizeof(data));
+    GenVBO(&VBO, _data, sizeof(double) * l);
 
     EnablePositionAttributes();
     EnableColorAttributes();
@@ -65,5 +63,23 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    WindowLoop(window, VAO, sizeof(data), shader);
+    Camera *camera = new Camera(glm::dvec3(0, 0, 0), glm::dquat(1, 0, 0, 0), glm::dvec3(0, 0, 1));
+    camera->SetFov(settings["fov"].get_double());
+    camera->SetAspectRatio((double)sw / (double)sh);
+    camera->SetNearPlane(settings["near"].get_double());
+    camera->SetFarPlane(settings["far"].get_double());
+    camera->SetProjection();
+
+    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    glm::mat4 rotation = glm::mat4_cast(glm::quat(1.0, 1.0, 1.0, 1.0));
+    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
+
+    glm::mat4 model = translation * rotation * scale;
+
+    shader->SetMat4("model", model);
+    WindowLoop(window, VAO, l, shader, [&]()
+               {
+                   shader->SetMat4("projection", camera->GetProjectionMatrix());
+                   glm::mat4 view = camera->GetViewMatrix();
+                   shader->SetMat4("view", camera->GetViewMatrix()); });
 }

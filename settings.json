@@ -1,5 +1,8 @@
 {
-    "name": "humen",
+    "name": "tahsin",
     "width": 1000,
-    "height": 1000
+    "height": 1000,
+    "fov": 90,
+    "near": 0.1,
+    "far": 1000
 }
