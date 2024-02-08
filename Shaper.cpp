@@ -32,14 +32,54 @@ int main()
     simdjson::padded_string json = simdjson::padded_string::load("settings.json");
     simdjson::ondemand::document settings = settingsParser.iterate(json);
 
+    simdjson::dom::parser dataParser;
+    simdjson::dom::document data;
+    dataParser.parse_into_document(data, simdjson::padded_string::load("Shape.json"));
+
+    auto cube = data.root()["cube"];
+
     Shader *shader = new Shader("Shaders\\core.frag", "Shaders\\core.vs", false);
 
     srand(std::time(nullptr));
-    int l;
-    double *data = ConstructDataFromJson(&l, "data.json", true, true);
-    double _data[l];
-    for (int i = 0; i < l; i++)
-        _data[i] = data[i];
+
+    std::vector<double> _data;
+
+    {
+        simdjson::dom::array position = cube["position"].get_array().value();
+        for (int i = 0; i < position.size(); i++)
+        {
+            try
+            {
+                _data.push_back(position.at(i).at(0).get_double().value());
+                _data.push_back(position.at(i).at(1).get_double().value());
+                _data.push_back(position.at(i).at(2).get_double().value());
+                _data.push_back((double)rand() / RAND_MAX);
+                _data.push_back((double)rand() / RAND_MAX);
+                _data.push_back((double)rand() / RAND_MAX);
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+        }
+    }
+
+    std::vector<unsigned int> indices;
+
+    {
+        simdjson::dom::array index = cube["index"].get_array().value();
+        for (int i = 0; i < index.size(); i++)
+        {
+            try
+            {
+                indices.push_back(index.at(i).get_uint64().value());
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+        }
+    }
 
     glfwSetErrorCallback(ErrorCallback);
     w = settings["width"].get_int64();
@@ -54,15 +94,18 @@ int main()
     shader->Use();
     GLuint VAO, VBO, EBO;
     GenVAO(&VAO);
-    GenVBO(&VBO, _data, sizeof(double) * l);
+    GenVBO(&VBO, _data.data(), sizeof(double) * _data.size());
+    GenEBO(&EBO, indices.data(), sizeof(unsigned int) * indices.size());
 
     EnablePositionAttributes();
     EnableColorAttributes();
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBindVertexArray(0);
 
-    Camera *camera = new Camera(glm::dvec3(0, 4, 0), glm::dquat(1, 0, 0, 0), glm::dvec3(0, 0, 1));
+    Camera *camera = new Camera(glm::dvec3(10, 2, 10), glm::angleAxis(1.0, glm::dvec3(0, 1, 0)), glm::dvec3(0, 1, 0));
     camera->SetFov(settings["fov"].get_double());
     camera->SetAspectRatio((double)sw / (double)sh);
     camera->SetNearPlane(settings["near"].get_double());
@@ -76,9 +119,9 @@ int main()
 
     shader->SetMat4("model", model);
 
-    WindowLoop(window, VAO, l, shader, [&]()
+    WindowLoop(window, VAO, _data.size(), EBO, indices.size(), shader, [&]()
                {
-                   camera->Rotate(glm::dvec3(0, 0.001, 0));
                    shader->SetMat4("projection", camera->GetProjectionMatrix());
-                   shader->SetMat4("view", camera->GetViewMatrix()); });
+                   shader->SetMat4("view", camera->GetViewMatrix());
+                   camera->Rotate(glm::angleAxis(0.001, camera->GetWorldUp())); });
 }

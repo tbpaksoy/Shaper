@@ -1,8 +1,8 @@
 {
     "name": "tahsin",
-    "width": 1000,
+    "width": 1400,
     "height": 1000,
-    "fov": 90,
+    "fov": 75,
     "near": 0.1,
-    "far": 1000
+    "far": 10000
 }
