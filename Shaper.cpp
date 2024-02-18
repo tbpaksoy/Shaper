@@ -36,7 +36,7 @@ int main()
     simdjson::dom::document data;
     dataParser.parse_into_document(data, simdjson::padded_string::load("Shape.json"));
 
-    auto cube = data.root()["cube"];
+    auto shape = data.root()["cube"];
 
     Shader *shader = new Shader("Shaders\\core.frag", "Shaders\\core.vs", false);
 
@@ -45,7 +45,7 @@ int main()
     std::vector<double> _data;
 
     {
-        simdjson::dom::array position = cube["position"].get_array().value();
+        simdjson::dom::array position = shape["position"].get_array().value();
         for (int i = 0; i < position.size(); i++)
         {
             try
@@ -67,7 +67,7 @@ int main()
     std::vector<unsigned int> indices;
 
     {
-        simdjson::dom::array index = cube["index"].get_array().value();
+        simdjson::dom::array index = shape["index"].get_array().value();
         for (int i = 0; i < index.size(); i++)
         {
             try
@@ -105,7 +105,11 @@ int main()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBindVertexArray(0);
 
-    Camera *camera = new Camera(glm::dvec3(10, 2, 10), glm::angleAxis(1.0, glm::dvec3(0, 1, 0)), glm::dvec3(0, 1, 0));
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
+
+    Camera *camera = new Camera(glm::dvec3(10, 0, 10), glm::dquat(1, 0, 0, 0), glm::dvec3(0, 1, 0));
     camera->SetFov(settings["fov"].get_double());
     camera->SetAspectRatio((double)sw / (double)sh);
     camera->SetNearPlane(settings["near"].get_double());
@@ -121,7 +125,7 @@ int main()
 
     WindowLoop(window, VAO, _data.size(), EBO, indices.size(), shader, [&]()
                {
-                   shader->SetMat4("projection", camera->GetProjectionMatrix());
-                   shader->SetMat4("view", camera->GetViewMatrix());
-                   camera->Rotate(glm::angleAxis(0.001, camera->GetWorldUp())); });
+        shader->SetMat4("projection", camera->GetProjectionMatrix());
+        shader->SetMat4("view", camera->GetViewMatrix());
+        camera->Rotate(glm::angleAxis(0.001, camera->GetWorldUp())); });
 }
