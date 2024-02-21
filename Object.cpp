@@ -1,5 +1,5 @@
 #include "Object.h"
-
+// Constructors
 Object::Object()
 {
     position = glm::dvec3(0.0, 0.0, 0.0);
@@ -15,6 +15,7 @@ Object::Object(glm::dvec3 position, glm::dquat rotation, glm::dvec3 scale)
 Object::~Object()
 {
 }
+// Methods
 glm::dvec3 Object::Front()
 {
     return rotation * glm::dvec3(0, 0, 1);

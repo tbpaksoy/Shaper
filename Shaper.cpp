@@ -93,17 +93,13 @@ int main()
     shader->Compile();
     shader->Use();
     GLuint VAO, VBO, EBO;
-    GenVAO(&VAO);
-    GenVBO(&VBO, _data.data(), sizeof(double) * _data.size());
-    GenEBO(&EBO, indices.data(), sizeof(unsigned int) * indices.size());
+
+    GenObjects(_data, indices, &VAO, &VBO, &EBO);
 
     EnablePositionAttributes();
     EnableColorAttributes();
 
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBindVertexArray(0);
+    BindObjects(VAO, VBO, EBO);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);

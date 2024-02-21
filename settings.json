@@ -2,7 +2,7 @@
     "name": "tahsin",
     "width": 1400,
     "height": 1000,
-    "fov": 75,
+    "fov": 90,
     "near": 0.1,
     "far": 10000
 }
